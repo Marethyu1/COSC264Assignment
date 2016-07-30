@@ -1,8 +1,8 @@
 """
-Reciever part of assignment
+Receiver part of assignment
 #--Liz And Stefan--#
 To run me type in the command line:
-python3 sender.py portNum PortNum PortNum fileName
+python3 receiver.py portNum PortNum PortNum fileName
 """
 
 import sys

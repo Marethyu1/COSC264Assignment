@@ -67,6 +67,55 @@ def main():
     RIN, ROUT, CRIN, FILENAME = get_params()
     print(RIN, ROUT, CRIN, FILENAME)
 
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # sets IP, UDP
+    sock.bind(('127.0.0.1', RIN))  # Claim the port for the server to use
+
+    while True:
+        data, sender = sock.recvfrom(ROUT)
+        print(data)
+
+
+
+        # data, sender = sock.recvfrom(1024)  # Get some data, blocking
+        # if data == b'request-time':  # b is for bytes, strings are too fancy
+        #     now = datetime.datetime.now().strftime("%I:%M:%S%p on %B %d, %Y")
+        #     sock.sendto(bytes(now, 'utf8'), sender)  # Reply back to sender with bytes
+        # else:
+        #     print("BAD PACKET")
+
+
+
+
 if __name__ == '__main__':
     #makes it run automatically which is neat
     main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

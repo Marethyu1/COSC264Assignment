@@ -69,10 +69,25 @@ def main():
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # sets IP, UDP
     sock.bind(('127.0.0.1', RIN))  # Claim the port for the server to use
+    sock.connect(('127.0.0.1', ROUT))
 
     while True:
-        data, sender = sock.recvfrom(ROUT)
-        print(data)
+
+        print("I AM LISTENING")
+
+
+        data, sender = sock.recvfrom(ROUT) #chang to CRIN when we have a channel set up
+        data = data.decode('utf-8')
+        print("recieved: ", data)
+
+
+        if data == "hello":
+            message = input()
+            message = str.encode(message, 'utf-8')
+            sock.send(message)  # Remember, bytes not strings
+
+
+
 
 
 

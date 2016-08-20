@@ -70,7 +70,26 @@ def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('127.0.0.1', SIN))
     sock.connect(('127.0.0.1', SOUT))  # So we don't have to specify where we send to
-    sock.send(b'Hello Liz and Stefan!')  # Remember, bytes not strings
+
+
+
+
+
+
+    while True:
+
+        message = input()
+        message = str.encode(message, 'utf-8')
+        sock.send(message)  # Remember, bytes not strings
+
+        # data, sender = sock.recvfrom(SOUT)
+        # data = data.decode('utf-8')
+        # if data:
+        #     print("recieved: ", data)
+
+
+
+
 
 if __name__ == '__main__':
     #makes it run automatically which is neat

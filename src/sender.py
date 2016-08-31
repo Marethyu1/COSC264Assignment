@@ -10,6 +10,9 @@ import socket
 import os.path #This is being used to check if file exists
 
 
+MAX_BYTES = 512
+MAGICNO = hex(0x497E)
+
 def exit():
     #exits program
     print("Program will now exit\n")
@@ -55,12 +58,25 @@ def get_params():
         SOUT = checkPort(sys.argv[1])
         CSIN = checkPort(sys.argv[2]) #NOTE: Not sure if this needs to be in the same range?
         FILENAME = checkFile(sys.argv[3])
-        
-        
-        
-        
+
     return  SIN, SOUT, CSIN, FILENAME
-    
+
+
+def read_file_data(file_obj):
+    return file_obj.read(MAX_BYTES)
+
+
+class packet:
+    def __init__(self, type, seqno, dataLen, data):
+        self.magicno = MAGICNO
+        self.type = type
+        self.seqno = seqno
+        self.dataLen = dataLen
+        self.data = data
+
+    def isMagicno(self):
+        """returns true if Magicno == """
+        return self.magicno == MAGICNO
 
 def main():
     #this is the main function which does the business
@@ -75,6 +91,17 @@ def main():
     exitFlag = False
 
     #NOW ENTER LOOP
+
+    file_object = open(FILENAME, "rb")
+
+    file_string = read_file_data(file_object)
+    print(file_string)
+    print()
+
+    while len(file_string) != 0:
+        file_string = read_file_data(file_object)
+        print(file_string)
+        print()
 
     """Attempt to read up to 512 byes from file to buffer. n = number of bytes actually read
         If n==0 prepare packet:
@@ -112,7 +139,19 @@ def main():
         Print this when program exits
                     """
 
+    """
+       while True:
 
+           message = input()
+           message = str.encode(message, 'utf-8')
+           sock.send(message)  # Remember, bytes not strings
+
+           # data, sender = sock.recvfrom(SOUT)
+           # data = data.decode('utf-8')
+           # if data:
+           #     print("recieved: ", data)
+
+       """
 
 
 

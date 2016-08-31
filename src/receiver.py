@@ -70,9 +70,36 @@ def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # sets IP, UDP
     sock.bind(('127.0.0.1', RIN))  # Claim the port for the server to use
 
-    while True:
-        data, sender = sock.recvfrom(ROUT)
-        print(data)
+    expected = 0
+
+
+    #ENTER LOOP
+
+    """Wait on socket RIN for incoming packet. USE BLOCKING SYSTEM CALL
+     if rcvd.magicno != 0x497E then STOP PROCESSING (go back to start of loop)
+     if rcvd.type != expected STOP PROCESSING
+     if rcvd.seqno != expected
+        Prepare acknowledgement packet
+            *magicno = 0x497E
+            *type = acknowledgementPacket
+            *seqno = rcvd.seqno
+            *datalen = 0
+        Send via ROUT to channel
+        Stop processing
+    If rcvd.seqno = expected:
+        Prepare acknowledgement packet
+            *magicno = 0x497E
+            *type = acknowledgementPacket
+            *seqno = rcvd.seqno
+            *datalen = 0
+            and empty data field
+        Send via ROUT
+        Toggle value of expected (swap from 0->1 or 1->0)
+        If rcvd.dataLen > 0
+            append data to output, stop processing
+        Else (data contains to data.. rcvd.data:en == 0
+            close output file and all sockets
+            exit program"""
 
 
 

@@ -70,7 +70,52 @@ def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('127.0.0.1', SIN))
     sock.connect(('127.0.0.1', SOUT))  # So we don't have to specify where we send to
-    sock.send(b'Hello Liz and Stefan!')  # Remember, bytes not strings
+   # sock.send(b'Hello Liz and Stefan!')  # Remember, bytes not strings
+    next = 0
+    exitFlag = False
+
+    #NOW ENTER LOOP
+
+    """Attempt to read up to 512 byes from file to buffer. n = number of bytes actually read
+        If n==0 prepare packet:
+            *magicno = 0x497E
+            *type = dataPacket
+            *seqno = next
+            *datalen = 0
+            and empty data field
+            Set exitFlag = True
+        Else (n > 0)
+            *magicno = 0x497E
+            *type = acknowledgementPacket
+            *seqno = rcvd.seqno
+            *datalen = n
+            Append n bytes of data to it
+        Place packet into packetBuffer
+        ENTERING INNER LOOP
+            Send packet in packetBuffer via SOUT
+            Wait for response on SIN (for AT MOST 1 SECOND) ...can use select()
+            If no response
+                go back to start of inner loop
+            If response received
+                if(rcvd.magicno != 0x497E || rcvd.type != acknowledgementPacket || rcvd.dataLen != 0)
+                    go back to start of inner loop & retransmit packetBuffer
+                else if rcvd.seqno != next
+                    go back to start of inner loop & retransmit packetBuffer
+                else rcvd.seqno == next
+                    toggle next
+                    if exitFlag == true
+                        close file & exit sender
+                    else (exitflag ==false)
+                        go back to beginning of outer loop (read next block of data & try to transmit)
+
+        Also add code that allows the sender to count how many packets it has sent in total over SOUT.
+        Print this when program exits
+                    """
+
+
+
+
+
 
 if __name__ == '__main__':
     #makes it run automatically which is neat

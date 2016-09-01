@@ -5,6 +5,8 @@ To run me type in the command line:
 python3 receiver.py portNum PortNum PortNum fileName
 """
 
+# python3 receiver.py 9000 9001 8003 test.txt
+
 import sys
 import socket
 import os.path #This is being used to check if file exists
@@ -96,10 +98,10 @@ def main():
     fileStream = bytearray()
 
     while recieving_packets:
-        readable, _, _ = select.select([sock], [], [], 1)
+        readable, _, _ = select.select([sockIn], [], [], 1)
 
         if readable:
-            data, sender = sock.recvfrom(528)
+            data, sender = sockIn.recvfrom(528)
             #print(data)
             unpacked_packet = packets.unpack_packet(data)
             magicno, type, seqno, dataLen, data = unpacked_packet
@@ -117,7 +119,7 @@ def main():
                 print(data)
                 #fileStream.append(bytearray(data), 256)
 
-                sock.send(packed_packet)
+                sockOut.send(packed_packet)
 
                 if dataLen == 0:
                     recieving_packets = False

@@ -5,6 +5,8 @@ To run me type in the command line:
 python sender.py portNum PortNum PortNum fileName
 """
 
+#   python3 sender.py 7001 7000 8000 test.txt
+
 import sys
 import socket
 import os.path #This is being used to check if file exists
@@ -125,11 +127,11 @@ def main():
 
         has_response = False
         while not has_response:
-            sock.send(encoded_packet) #sendencoded packet
+            sockOut.send(encoded_packet) #sendencoded packet
 
-            readable, _, _ = select.select([sock], [], [], 1)
+            readable, _, _ = select.select([sockIn], [], [], 1)
             if readable:
-                data = sock.recv(528)
+                data = sockIn.recv(528)
                 has_response = True
                 print(data)
 

@@ -76,10 +76,16 @@ def main():
     RIN, ROUT, CRIN, FILENAME = get_params()
     print(RIN, ROUT, CRIN, FILENAME)
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # sets IP, UDP
-    sock.bind(('127.0.0.1', RIN))  # Claim the port for the server to use
-    sock.connect(('127.0.0.1', ROUT))  # So we don't have to specify where we send to
-    sock.setblocking(0)
+    sockOut = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    sockOut.bind(('127.0.0.1', ROUT))
+    sockOut.connect(('127.0.0.1', CRIN))  # So we don't have to specify where we send to
+    sockOut.setblocking(0)
+
+    sockIn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    sockIn.bind(('127.0.0.1', RIN))
+    sockIn.setblocking(0)
 
     expected = 0
     currentSeqno = 0

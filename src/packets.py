@@ -1,11 +1,11 @@
-
+import struct
 MAX_BYTES = 512
 MAGICNO = hex(0x497E)
 PTYPE_DATA = 0
 PTYPE_ACK = 1
 
 class packet:
-    def __init__(self, seqno, dataLen, data, type=PTYPE_DATA, magicno=MAGICNO):
+    def __init__(self, seqno, dataLen=0, data=b'', type=PTYPE_DATA, magicno=MAGICNO):
         self.magicno = magicno
         self.type = type
         self.seqno = seqno
@@ -51,6 +51,9 @@ def unpack_packet(packed_packet):
     my_struct = struct.Struct(pack_format)
     #print(len(packed_packet))
     unpacked_packet = my_struct.unpack(packed_packet)
+
+
+
     # magicno = unpacked_packet[0]
     # type = unpacked_packet[1]
     # seqno = unpacked_packet[2]

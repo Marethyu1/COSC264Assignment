@@ -11,6 +11,7 @@ import os.path #This is being used to check if file exists
 import struct
 import binascii
 import packets
+import select
 
 MAX_BYTES = 512
 
@@ -82,6 +83,7 @@ def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('127.0.0.1', SIN))
     sock.connect(('127.0.0.1', SOUT))  # So we don't have to specify where we send to
+    sock.setblocking(0)
     # sock.send(b'Hello Liz and Stefan!')  # Remember, bytes not strings
     next = 0
     exitFlag = False
@@ -104,6 +106,8 @@ def main():
         current_string = read_file_data(file_object)
         if len(current_string) == 0:
             current_packet = packets.packet(next, len(current_string), current_string)
+            exitFlag = True
+            print("HUASDASD")
             #print(current_packet)
 
         elif len(current_string) > 0:
@@ -112,35 +116,25 @@ def main():
 
 
         encoded_packet = packets.pack_packet(current_packet)
-        sock.send(encoded_packet)
 
-        #print(encoded_packet)
-       #unpacked_packet = unpack_packet(encoded_packet)
+        has_response = False
+        while not has_response:
+            sock.send(encoded_packet) #sendencoded packet
 
+            readable, _, _ = select.select([sock], [], [], 1)
+            if readable:
+                data = sock.recv(528)
+                has_response = True
+                print(data)
 
-        count += 1
+        next ^= 1 #XOR Using bitwise operator
 
-        if count == 10:
-            exitFlag = True
-
-
+    print("weeees")
     file_object.close()
-    """Attempt to read up to 512 byes from file to buffer. n = number of bytes actually read
-        If n==0 prepare packet:
-            *magicno = 0x497E
-            *type = dataPacket
-            *seqno = next
-            *datalen = 0
-            and empty data field
-            Set exitFlag = True
-        Else (n > 0)
-            *magicno = 0x497E
-            *type = acknowledgementPacket
-            *seqno = rcvd.seqno
-            *datalen = n
-            Append n bytes of data to it
-        Place packet into packetBuffer
-        ENTERING INNER LOOP
+
+
+
+    """ENTERING INNER LOOP
             Send packet in packetBuffer via SOUT
             Wait for response on SIN (for AT MOST 1 SECOND) ...can use select()
             If no response

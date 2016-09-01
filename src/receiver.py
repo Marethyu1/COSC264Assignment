@@ -11,9 +11,13 @@ import os.path #This is being used to check if file exists
 import struct
 import binascii
 import packets
+import select
 
 
-
+MAX_BYTES = 512
+MAGICNO = hex(0x497E)
+PTYPE_DATA = 0
+PTYPE_ACK = 1
 
 def exit():
     #exits program
@@ -74,14 +78,45 @@ def main():
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # sets IP, UDP
     sock.bind(('127.0.0.1', RIN))  # Claim the port for the server to use
+    sock.connect(('127.0.0.1', ROUT))  # So we don't have to specify where we send to
+    sock.setblocking(0)
 
     expected = 0
+    currentSeqno = 0
 
-    while True:
-        data, sender = sock.recvfrom(1024)
-        unpacked_packet = packets.unpack_packet(data)
+    poos_count = 0
+    recieving_packets = True
+    while recieving_packets:
+        readable, _, _ = select.select([sock], [], [], 1)
 
-        print(unpacked_packet[4])
+        if readable:
+            data, sender = sock.recvfrom(528)
+            #print(data)
+            unpacked_packet = packets.unpack_packet(data)
+            magicno, type, seqno, dataLen, data = unpacked_packet
+            #print(unpacked_packet)
+            if poos_count < 3:
+                type = 10000
+                poos_count += 1
+                print("hasnt recieved")
+            if magicno == int(MAGICNO, 0) and type == PTYPE_DATA and seqno == expected: #add seqnoCheck
+
+                ack_pack = packets.packet(currentSeqno)
+                packed_packet = packets.pack_packet(ack_pack)
+                print(data)
+                sock.send(packed_packet)
+
+                if dataLen == 0:
+                    recieving_packets = False
+
+
+
+
+
+
+        expected ^= 1
+
+
 
 
     #ENTER LOOP

@@ -113,19 +113,17 @@ def pack_packet(current_packet):
 
 def unpack_packet(packed_packet):
 
-    pack_format = 'I I I I'
+    pack_format = 'I I I I {0}s'.format(len(packed_packet)-16)
     my_struct = struct.Struct(pack_format)
-
+    #print(len(packed_packet))
     unpacked_packet = my_struct.unpack(packed_packet)
     # magicno = unpacked_packet[0]
     # type = unpacked_packet[1]
     # seqno = unpacked_packet[2]
-    dataLen = unpacked_packet[3]
+    #dataLen = unpacked_packet[3]
     # data = unpacked_packet[4]
 
-    print(dataLen)
-    print()
-    print()
+    return unpacked_packet
 
 
 
@@ -170,7 +168,10 @@ def main():
 
 
         encoded_packet = pack_packet(current_packet)
-        unpacked_packet = unpack_packet(encoded_packet)
+        sock.send(encoded_packet)
+
+        #print(encoded_packet)
+       #unpacked_packet = unpack_packet(encoded_packet)
 
 
         count += 1

@@ -86,6 +86,9 @@ def main():
 
     poos_count = 0
     recieving_packets = True
+
+    fileStream = bytearray()
+
     while recieving_packets:
         readable, _, _ = select.select([sock], [], [], 1)
 
@@ -95,15 +98,19 @@ def main():
             unpacked_packet = packets.unpack_packet(data)
             magicno, type, seqno, dataLen, data = unpacked_packet
             #print(unpacked_packet)
+            #
             if poos_count < 3:
-                type = 10000
-                poos_count += 1
-                print("hasnt recieved")
+                 type = 10000
+                 poos_count += 1
+                 print("hasnt recieved")
             if magicno == int(MAGICNO, 0) and type == PTYPE_DATA and seqno == expected: #add seqnoCheck
 
                 ack_pack = packets.packet(currentSeqno)
                 packed_packet = packets.pack_packet(ack_pack)
+
                 print(data)
+                #fileStream.append(bytearray(data), 256)
+
                 sock.send(packed_packet)
 
                 if dataLen == 0:
@@ -115,6 +122,9 @@ def main():
 
 
         expected ^= 1
+
+
+    print(fileStream)
 
 
 

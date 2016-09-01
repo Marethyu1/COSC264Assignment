@@ -81,8 +81,9 @@ def main():
     #print(SIN, SOUT, CSIN, FILENAME)
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(('127.0.0.1', SIN))
-    sock.connect(('127.0.0.1', SOUT))  # So we don't have to specify where we send to
+
+    sock.bind(('127.0.0.1', SOUT))
+    sock.connect(('127.0.0.1', CSIN))  # So we don't have to specify where we send to
     sock.setblocking(0)
     # sock.send(b'Hello Liz and Stefan!')  # Remember, bytes not strings
     next = 0

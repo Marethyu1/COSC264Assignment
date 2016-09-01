@@ -67,8 +67,7 @@ def get_params():
         RIN = checkPort(sys.argv[5])
         
         P = checkProbability(sys.argv[6])
-        
-        
+
         
     return  CSIN, CSOUT, CRIN, CROUT, SIN, RIN, P
     
@@ -76,7 +75,14 @@ def get_params():
 def main():
     #this is the main function which does the business
     CSIN, CSOUT, CRIN, CROUT, SIN, RIN, P = get_params()
-    print(CSIN, CSOUT, CRIN, CROUT, SIN, RIN, P)
+
+    senderSocket =   socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    recieverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+
+
+
+
 
 if __name__ == '__main__':
     #makes it run automatically which is neat

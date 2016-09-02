@@ -128,8 +128,10 @@ def main():
         has_response = False
         while not has_response:
             sockOut.send(encoded_packet) #sendencoded packet
+            print("sending packet")
 
             readable, _, _ = select.select([sockIn], [], [], 1)
+
             if readable:
                 data = sockIn.recv(528)
                 has_response = True

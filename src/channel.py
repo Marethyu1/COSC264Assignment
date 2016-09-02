@@ -8,6 +8,8 @@ python channel.py portNum PortNum PortNum PortNum S(in) R(in) P
 #   python3 channel.py 8000 8001 8003 8002 7001 9000 0.1
 import sys
 import socket
+import select
+import packets
 
 
 
@@ -102,7 +104,41 @@ def main():
     recieverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     while True:
-        pass
+        readable, _, _ = select.select([sockCSIn, sockCRIn], [], [], 2)
+        for sockets in readable:
+
+            if sockets is sockCSIn:
+                """
+                checks magicno contents
+                if it isnt 0x497E, stop procsessing
+                else send packet through crout
+                """
+                data, addr = sockCSIn.recvfrom(528)
+
+                unpacked_packet = packets.unpack_packet(data)
+                magicno, type, seqno, dataLen, data = unpacked_packet
+
+                #########################
+                ###Generate Probablity###
+                #########################
+
+                if packets.magicNoCheck(magicno):
+                    #now we can send the packet
+                    print(data)
+                    sockCROut.send(data)
+
+
+            if sockets is sockCRIn:
+                data, addr = sockCRIn.recvfrom(528)
+                print(data)
+
+
+
+
+        #
+        # if readable:
+        #     data, addr = sockCSIn.recvfrom(528)
+        #     print(data)
 
 
 

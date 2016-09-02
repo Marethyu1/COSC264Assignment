@@ -28,6 +28,10 @@ class packet:
         # e = ("magicNo is {0}\n".format(self.magicno))
         return out_string
 
+
+def magicNoCheck(magicno):
+    return magicno == int(MAGICNO, 0)
+
 def pack_packet(current_packet):
 
     magicno = current_packet.magicno

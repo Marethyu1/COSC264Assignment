@@ -86,12 +86,12 @@ def main():
 
     sockOut.bind(('127.0.0.1', SOUT))
     sockOut.connect(('127.0.0.1', CSIN))  # So we don't have to specify where we send to
-    sockOut.setblocking(0)
+   # sockOut.setblocking(0)
 
     sockIn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     sockIn.bind(('127.0.0.1', SIN))
-    sockIn.setblocking(0)
+    #sockIn.setblocking(0)
     # sock.send(b'Hello Liz and Stefan!')  # Remember, bytes not strings
     next = 0
     exitFlag = False

@@ -82,12 +82,12 @@ def main():
 
     sockOut.bind(('127.0.0.1', ROUT))
     sockOut.connect(('127.0.0.1', CRIN))  # So we don't have to specify where we send to
-    sockOut.setblocking(0)
+    #sockOut.setblocking(0)
 
     sockIn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     sockIn.bind(('127.0.0.1', RIN))
-    sockIn.setblocking(0)
+   # sockIn.setblocking(0)
 
     expected = 0
     currentSeqno = 0
@@ -108,13 +108,13 @@ def main():
             magicno, type, seqno, dataLen, data = unpacked_packet
             #print(unpacked_packet)
             #
-            """
+
             if poos_count < 3:
                  type = 10000
                  poos_count += 1
                  print("hasnt recieved")
 
-                """
+
             if magicno == int(MAGICNO, 0) and type == PTYPE_DATA and seqno == expected: #add seqnoCheck
 
                 ack_pack = packets.packet(currentSeqno)

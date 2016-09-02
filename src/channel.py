@@ -82,29 +82,30 @@ def main():
 
     sockCSOut.bind(('127.0.0.1', CSOUT))
     sockCSOut.connect(('127.0.0.1', SIN))  # So we don't have to specify where we send to
-    sockCSOut.setblocking(0)
+    #sockCSOut.setblocking(0)
 
     sockCSIn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     sockCSIn.bind(('127.0.0.1', CSIN))
-    sockCSIn.setblocking(0)
+    #sockCSIn.setblocking(0)
 
     sockCROut = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     sockCROut.bind(('127.0.0.1', CROUT))
     sockCROut.connect(('127.0.0.1', RIN))  # So we don't have to specify where we send to
-    sockCROut.setblocking(0)
+    #sockCROut.setblocking(0)
 
     sockCRIn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     sockCRIn.bind(('127.0.0.1', CRIN))
-    sockCRIn.setblocking(0)
+    #sockCRIn.setblocking(0)
 
     senderSocket =   socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     recieverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     while True:
         readable, _, _ = select.select([sockCSIn, sockCRIn], [], [], 2)
+        print("listening")
         for sockets in readable:
 
             if sockets is sockCSIn:
@@ -114,9 +115,10 @@ def main():
                 else send packet through crout
                 """
                 data, addr = sockCSIn.recvfrom(528)
-
                 unpacked_packet = packets.unpack_packet(data)
-                magicno, type, seqno, dataLen, data = unpacked_packet
+                magicno, type, seqno, dataLen, byte_data = unpacked_packet
+
+
 
                 #########################
                 ###Generate Probablity###
@@ -124,13 +126,23 @@ def main():
 
                 if packets.magicNoCheck(magicno):
                     #now we can send the packet
-                    print(data)
+                    print("secnding datapack")
                     sockCROut.send(data)
 
 
             if sockets is sockCRIn:
                 data, addr = sockCRIn.recvfrom(528)
-                print(data)
+                unpacked_packet = packets.unpack_packet(data)
+                magicno, type, seqno, dataLen, byte_data = unpacked_packet
+
+                #########################
+                ###Generate Probablity###
+                #########################
+
+                if packets.magicNoCheck(magicno):
+                    # now we can send the packet
+                    print("sending AckPack")
+                    sockCSOut.send(data)
 
 
 

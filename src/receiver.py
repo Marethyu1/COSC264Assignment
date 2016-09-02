@@ -45,10 +45,12 @@ def checkPort(num):
 def checkFile(fname):
     """checks for existing file"""
     if(os.path.isfile(fname)):
-        return fname
-    else:
-        print("File: " + fname + " does not exist.")
+        print("File: " + fname + " already exists.")
         exit()
+
+    else:
+
+        return fname
     
 
 def get_params():
@@ -95,9 +97,10 @@ def main():
     poos_count = 0
     recieving_packets = True
 
-    fileStream = bytearray()
+    fileStream = b''
 
     while recieving_packets:
+
 
         readable, _, _ = select.select([sockIn], [], [], 1)
 
@@ -109,18 +112,19 @@ def main():
             #print(unpacked_packet)
             #
 
-            if poos_count < 3:
-                 type = 10000
-                 poos_count += 1
-                 print("hasnt recieved")
+            #
+            # if poos_count < 3:
+            #      type = 10000
+            #      poos_count += 1
+            #      print("hasnt recieved")
 
 
             if magicno == int(MAGICNO, 0) and type == PTYPE_DATA and seqno == expected: #add seqnoCheck
-
+                print("recieving")
                 ack_pack = packets.packet(currentSeqno)
                 packed_packet = packets.pack_packet(ack_pack)
 
-                print(data)
+                fileStream += data
                 #fileStream.append(bytearray(data), 256)
 
                 sockOut.send(packed_packet)
@@ -136,7 +140,11 @@ def main():
         expected ^= 1
 
 
-    print(fileStream)
+    #print(fileStream)
+
+    file_object = open(FILENAME, "wb+")
+    file_object.write(fileStream)
+    file_object.close()
 
 
 

@@ -10,6 +10,7 @@ import sys
 import socket
 import select
 import packets
+import random
 
 
 
@@ -73,7 +74,21 @@ def get_params():
         
     return  CSIN, CSOUT, CRIN, CROUT, SIN, RIN, P
     
+def can_send(P):
+    to_send = False
+    u = random.uniform(0, 1)
+    if u >= P:
+        to_send =  True
 
+
+    return to_send
+
+
+
+
+
+
+    return True
 def main():
     #this is the main function which does the business
     CSIN, CSOUT, CRIN, CROUT, SIN, RIN, P = get_params()
@@ -104,7 +119,7 @@ def main():
     recieverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     while True:
-        readable, _, _ = select.select([sockCSIn, sockCRIn], [], [], 2)
+        readable, _, _ = select.select([sockCSIn, sockCRIn], [], [], 1)
         print("listening")
         for sockets in readable:
 
@@ -123,11 +138,13 @@ def main():
                 #########################
                 ###Generate Probablity###
                 #########################
-
                 if packets.magicNoCheck(magicno):
-                    #now we can send the packet
-                    print("secnding datapack")
-                    sockCROut.send(data)
+                    if can_send(P):
+
+
+                        #now we can send the packet
+                        print("secnding datapack")
+                        sockCROut.send(data)
 
 
             if sockets is sockCRIn:
@@ -138,11 +155,11 @@ def main():
                 #########################
                 ###Generate Probablity###
                 #########################
-
                 if packets.magicNoCheck(magicno):
-                    # now we can send the packet
-                    print("sending AckPack")
-                    sockCSOut.send(data)
+                    if can_send(P):
+                        # now we can send the packet
+                        print("sending AckPack")
+                        sockCSOut.send(data)
 
 
 

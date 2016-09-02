@@ -109,7 +109,8 @@ def main():
         print(file_string)
         print()
     """
-    count  = 0
+    all_packets_count  = 0
+    ack_packet_count = 0
     while not exitFlag:
         current_string = read_file_data(file_object)
         if len(current_string) == 0:
@@ -128,6 +129,7 @@ def main():
         has_response = False
         while not has_response:
             sockOut.send(encoded_packet) #sendencoded packet
+            all_packets_count += 1
             print("sending packet")
 
             readable, _, _ = select.select([sockIn], [], [], 1)
@@ -135,12 +137,17 @@ def main():
             if readable:
                 data = sockIn.recv(528)
                 has_response = True
-                print(data)
+                print("recieved ack packet")
+                ack_packet_count +=1
 
         next ^= 1 #XOR Using bitwise operator
 
-    print("weeees")
+
+    print("Total num packets sent: ", all_packets_count)
+    print("Successful packets:     ", ack_packet_count  )
     file_object.close()
+    sockOut.close()
+    sockIn.close()
 
 
 

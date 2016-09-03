@@ -9,9 +9,7 @@ python3 receiver.py portNum PortNum PortNum fileName
 
 import sys
 import socket
-import os.path #This is being used to check if file exists
-import struct
-import binascii
+import os.path
 import packets
 import select
 
@@ -22,20 +20,22 @@ PTYPE_DATA = 0
 PTYPE_ACK = 1
 
 def exit():
-    #exits program
-    print("Program will now exit\n")
+    """Exits the program displaying a message"""
+    print("----------------------------------------")
+    print("------------Program exited--------------")
+    print("----------------------------------------")
     sys.exit(0)
 
 def checkPort(num):
-    #checks to make sure the entered port number is an int
+    """checks port number to ensure that it is an integer in the range 1024 - 64000
+        exits program if it finds and error
+        returns portnumber as an integer"""
     try:
         port_num = int(num)
     except ValueError:
         print("Port Number " + str(num) + " was not an integer")
         exit()
-        
     if not(1024 <= port_num and port_num <= 64000):
-        #checking range
         print("Port number " + str(num) + "  was not in range 1024 - 64000")
         exit()
         
@@ -43,7 +43,8 @@ def checkPort(num):
         return port_num
     
 def checkFile(fname):
-    """checks for existing file"""
+    """checks for existing file
+        exits if file not found"""
     if(os.path.isfile(fname)):
         print("File: " + fname + " already exists.")
         exit()
@@ -54,19 +55,18 @@ def checkFile(fname):
     
 
 def get_params():
-    #gets and sets all of the inputs from the command line
-    #print(sys.argv)
+    """gets all of the parameters from the command line
+        exits if wrong amount of arguments are entered
+        checks to ensure input is correct
+        returns port numbers and filename"""
     if len(sys.argv) != 5:
-        #error Checking
         print("\nWrong amount of command line arguments entered")
-        
         exit()
-        
     else:    
-        sys.argv = sys.argv[1:] #chops of name of program
+        sys.argv = sys.argv[1:]
         RIN = checkPort(sys.argv[0])
         ROUT = checkPort(sys.argv[1])
-        CRIN = checkPort(sys.argv[2]) #NOTE: Not sure if this needs to be in the same range?
+        CRIN = checkPort(sys.argv[2])
         FILENAME = checkFile(sys.argv[3])
         
         
@@ -74,117 +74,95 @@ def get_params():
         
     return  RIN, ROUT, CRIN, FILENAME
 
+def  return_resources(socket_list):
+    """closes sockets and file
+        giving memory back to system"""
+    for sockets in socket_list:
+        sockets.close()
+
+def raise_socket_error(socket_list, ERRORCOUNT=0):
+    """if connection to a socket is refused an error is raised
+        will wait 10 times and then time out"""
+
+    if ERRORCOUNT>10:
+        print()
+        print("----------------------------------------")
+        print("-----------Connection refused-----------")
+        print("----------Program will now exit---------")
+        print("----------------------------------------")
+        print()
+
+        return_resources(socket_list)
+        exit()
+
+    else:
+        print()
+        print("---connection refused, trying again-----")
+        print()
+
+    return ERRORCOUNT+1
+
 
 def main():
-    #this is the main function which does the business
+    """Main function for reciever
+     recieves data and turns into file
+     sends ack packets"""
     RIN, ROUT, CRIN, FILENAME = get_params()
-    print(RIN, ROUT, CRIN, FILENAME)
 
     sockOut = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
     sockOut.bind(('127.0.0.1', ROUT))
-    sockOut.connect(('127.0.0.1', CRIN))  # So we don't have to specify where we send to
-    #sockOut.setblocking(0)
+    sockOut.connect(('127.0.0.1', CRIN))
 
     sockIn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
     sockIn.bind(('127.0.0.1', RIN))
-   # sockIn.setblocking(0)
 
     expected = 0
     currentSeqno = 0
-
-    poos_count = 0
     recieving_packets = True
-
     fileStream = b''
+    socket_list = [sockOut, sockIn]
+    ERROR_COUNT = 0
 
     while recieving_packets:
-
-
         readable, _, _ = select.select([sockIn], [], [], 1)
 
         if readable:
             data, sender = sockIn.recvfrom(528)
-            #print(data)
             unpacked_packet = packets.unpack_packet(data)
             magicno, type, seqno, dataLen, data = unpacked_packet
-            #print(unpacked_packet)
-            #
 
-            #
-            # if poos_count < 3:
-            #      type = 10000
-            #      poos_count += 1
-            #      print("hasnt recieved")
+            if magicno == int(MAGICNO, 0) and type == PTYPE_DATA and seqno == expected:
 
-
-            if magicno == int(MAGICNO, 0) and type == PTYPE_DATA and seqno == expected: #add seqnoCheck
-                print("recieving")
                 ack_pack = packets.packet(currentSeqno)
                 packed_packet = packets.pack_packet(ack_pack)
 
                 fileStream += data
-                #fileStream.append(bytearray(data), 256)
+                print()
+                print("-" * 80)
+                print("recieved packet:",  data)
+                print("-" * 80)
+                print()
 
-                sockOut.send(packed_packet)
+                try:
+                    sockOut.send(packed_packet)
+                except:
+                    ERROR_COUNT = raise_socket_error(socket_list, ERROR_COUNT)
+
+                else:
+                    ERROR_COUNT = 0 #a packet has been successfully sent so we can reset errorcount
 
                 if dataLen == 0:
                     recieving_packets = False
 
-
-
-
-
-
-        expected ^= 1
-
-
-    #print(fileStream)
+        expected ^= 1 #Switches between 0 and 1 with XOR Using bitwise operator
 
     file_object = open(FILENAME, "wb+")
     file_object.write(fileStream)
-    file_object.close()
+    file_object.close() #returns resources
 
+    print("RECIEVED ALL DATA")
+    exit()
 
-
-
-    #ENTER LOOP
-
-    """Wait on socket RIN for incoming packet. USE BLOCKING SYSTEM CALL
-     if rcvd.magicno != 0x497E then STOP PROCESSING (go back to start of loop)
-     if rcvd.type != expected STOP PROCESSING
-     if rcvd.seqno != expected
-        Prepare acknowledgement packet
-            *magicno = 0x497E
-            *type = acknowledgementPacket
-            *seqno = rcvd.seqno
-            *datalen = 0
-        Send via ROUT to channel
-        Stop processing
-    If rcvd.seqno = expected:
-        Prepare acknowledgement packet
-            *magicno = 0x497E
-            *type = acknowledgementPacket
-            *seqno = rcvd.seqno
-            *datalen = 0
-            and empty data field
-        Send via ROUT
-        Toggle value of expected (swap from 0->1 or 1->0)
-        If rcvd.dataLen > 0
-            append data to output, stop processing
-        Else (data contains to data.. rcvd.data:en == 0
-            close output file and all sockets
-            exit program"""
-
-
-
-        # data, sender = sock.recvfrom(1024)  # Get some data, blocking
-        # if data == b'request-time':  # b is for bytes, strings are too fancy
-        #     now = datetime.datetime.now().strftime("%I:%M:%S%p on %B %d, %Y")
-        #     sock.sendto(bytes(now, 'utf8'), sender)  # Reply back to sender with bytes
-        # else:
-        #     print("BAD PACKET")
 
 
 

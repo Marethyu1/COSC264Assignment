@@ -19,12 +19,16 @@ MAX_BYTES = 512
 
 
 def exit():
-    #exits program
-    print("Program will now exit\n")
+    """Exits the program displaying a message"""
+    print("----------------------------------------")
+    print("------------Program exited--------------")
+    print("----------------------------------------")
     sys.exit(0)
 
 def checkPort(num):
-    #checks to make sure the entered port number is an int
+    """checks port number to ensure that it is an integer in the range 1024 - 64000
+        exits program if it finds and error
+        returns portnumber as an integer"""
     try:
         port_num = int(num)
     except ValueError:
@@ -32,165 +36,145 @@ def checkPort(num):
         exit()
         
     if not(1024 <= port_num and port_num <= 64000):
-        #checking range
         print("Port number " + str(num) + "  was not in range 1024 - 64000")
         exit()
-        
     else:
         return port_num
     
 def checkFile(fname):
-    """checks for existing file"""
+    """checks for existing file
+        exits if file not found"""
     if(os.path.isfile(fname)):
         return fname
     else:
         print("File: " + fname + " does not exist.")
         exit()
-    
 
 def get_params():
-    #gets and sets all of the inputs from the command line
-    #print(sys.argv)
+    """gets all of the parameters from the command line
+        exits if wrong amount of arguments are entered
+        checks to ensure input is correct
+        returns port numbers and filename"""
     if len(sys.argv) != 5:
-        #error Checking
         print("\nWrong amount of command line arguments entered")
-        
         exit()
-        
     else:    
-        sys.argv = sys.argv[1:] #chops of name of program
+        sys.argv = sys.argv[1:]
         SIN = checkPort(sys.argv[0])
         SOUT = checkPort(sys.argv[1])
-        CSIN = checkPort(sys.argv[2]) #NOTE: Not sure if this needs to be in the same range?
+        CSIN = checkPort(sys.argv[2])
         FILENAME = checkFile(sys.argv[3])
 
     return  SIN, SOUT, CSIN, FILENAME
 
 
 def read_file_data(file_obj):
+    """reads a max amount of data into a buffer"""
     return file_obj.read(MAX_BYTES)
 
 
+def  return_resources(socket_list, file_object):
+    """closes sockets and file
+        giving memory back to system"""
+    for sockets in socket_list:
+        sockets.close()
+    file_object.close()
 
 
+def raise_socket_error(socket_list, file_object, ERROR_COUNT):
+    """if connection to a socket is refused an error is raised
+        will wait 10 times and then time out"""
+    if ERROR_COUNT >10:
 
+        print()
+        print("----------------------------------------")
+        print("-----------Connection timeout-----------")
+        print("----------Program will now exit---------")
+        print("----------------------------------------")
+        print()
 
+        return_resources(socket_list, file_object)
+        exit()
+    else:
+        print()
+        print("---connection refused, trying again-----")
+        print()
 
+    return ERROR_COUNT+1
 
 def main():
-    #this is the main function which does the business
+    """main function for sender
+        sends a file to channel"""
+
+
     SIN, SOUT, CSIN, FILENAME = get_params()
-    #print(SIN, SOUT, CSIN, FILENAME)
 
     sockOut = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     sockOut.bind(('127.0.0.1', SOUT))
-    sockOut.connect(('127.0.0.1', CSIN))  # So we don't have to specify where we send to
-   # sockOut.setblocking(0)
+    sockOut.connect(('127.0.0.1', CSIN))
 
     sockIn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
     sockIn.bind(('127.0.0.1', SIN))
-    #sockIn.setblocking(0)
-    # sock.send(b'Hello Liz and Stefan!')  # Remember, bytes not strings
+
     next = 0
     exitFlag = False
 
-    #NOW ENTER LOOP
-
     file_object = open(FILENAME, "rb")
 
-    #current_string = read_file_data(file_object)
-    """print(file_string)
-    print()
 
-    while len(file_string) != 0:
-        file_string = read_file_data(file_object)
-        print(file_string)
-        print()
-    """
     all_packets_count  = 0
     ack_packet_count = 0
+    socket_list = [sockOut, sockIn]
+    ERROR_COUNT = 0
+
+    print()
     while not exitFlag:
         current_string = read_file_data(file_object)
         if len(current_string) == 0:
             current_packet = packets.packet(next, len(current_string), current_string)
             exitFlag = True
-            print("HUASDASD")
-            #print(current_packet)
+            print("seding final packet")
 
         elif len(current_string) > 0:
             current_packet = packets.packet(next, len(current_string), current_string)
-            #print(current_packet)
-
 
         encoded_packet = packets.pack_packet(current_packet)
 
         has_response = False
         while not has_response:
-            sockOut.send(encoded_packet) #sendencoded packet
-            all_packets_count += 1
-            print("sending packet")
+            try:
+                sockOut.send(encoded_packet) #sendencoded packet
+                all_packets_count += 1
+            except:
+                ERROR_COUNT = raise_socket_error(socket_list, file_object, ERROR_COUNT)
+
+
+            else:
+                ERROR_COUNT = 0 #a packet has been successfully sent so we can reset errorcount
+
+            print("------------Sending Packet--------------")
+
 
             readable, _, _ = select.select([sockIn], [], [], 1)
 
             if readable:
                 data = sockIn.recv(528)
                 has_response = True
-                print("recieved ack packet")
+                print()
+
+                print("------------recieved ack Pack-----------")
                 ack_packet_count +=1
 
-        next ^= 1 #XOR Using bitwise operator
+        next ^= 1 #Switches between 0 and 1 with XOR Using bitwise operator
 
 
     print("Total num packets sent: ", all_packets_count)
     print("Successful packets:     ", ack_packet_count  )
-    file_object.close()
-    sockOut.close()
-    sockIn.close()
-
-
-
-    """ENTERING INNER LOOP
-            Send packet in packetBuffer via SOUT
-            Wait for response on SIN (for AT MOST 1 SECOND) ...can use select()
-            If no response
-                go back to start of inner loop
-            If response received
-                if(rcvd.magicno != 0x497E || rcvd.type != acknowledgementPacket || rcvd.dataLen != 0)
-                    go back to start of inner loop & retransmit packetBuffer
-                else if rcvd.seqno != next
-                    go back to start of inner loop & retransmit packetBuffer
-                else rcvd.seqno == next
-                    toggle next
-                    if exitFlag == true
-                        close file & exit sender
-                    else (exitflag ==false)
-                        go back to beginning of outer loop (read next block of data & try to transmit)
-
-        Also add code that allows the sender to count how many packets it has sent in total over SOUT.
-        Print this when program exits
-                    """
-
-    """
-       while True:
-
-           message = input()
-           message = str.encode(message, 'utf-8')
-           sock.send(message)  # Remember, bytes not strings
-
-           # data, sender = sock.recvfrom(SOUT)
-           # data = data.decode('utf-8')
-           # if data:
-           #     print("recieved: ", data)
-
-       """
-
-
-
+    return_resources(socket_list, file_object)
+    exit()
 
 if __name__ == '__main__':
-    #makes it run automatically which is neat
     main()
 
 

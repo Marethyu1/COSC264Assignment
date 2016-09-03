@@ -5,6 +5,7 @@ PTYPE_DATA = 0
 PTYPE_ACK = 1
 
 class packet:
+    """Packet class as defined by instructions"""
     def __init__(self, seqno, dataLen=0, data=b'', type=PTYPE_DATA, magicno=MAGICNO):
         self.magicno = magicno
         self.type = type
@@ -30,16 +31,16 @@ class packet:
 
 
 def magicNoCheck(magicno):
+    """Cechkes if magic numbe ris 0x497E"""
     return magicno == int(MAGICNO, 0)
 
 def pack_packet(current_packet):
-
+    """Packs packet into binary data"""
     magicno = current_packet.magicno
     type = current_packet.type
     seqno = current_packet.seqno
     dataLen = current_packet.dataLen
     data = current_packet.data
-
 
     to_pack = (int(magicno, 0), type, seqno, dataLen, data)
 
@@ -50,18 +51,9 @@ def pack_packet(current_packet):
     return packed_packet
 
 def unpack_packet(packed_packet):
+    """Unpacks binary data from packet"""
 
     pack_format = 'I I I I {0}s'.format(len(packed_packet)-16)
     my_struct = struct.Struct(pack_format)
-    #print(len(packed_packet))
     unpacked_packet = my_struct.unpack(packed_packet)
-
-
-
-    # magicno = unpacked_packet[0]
-    # type = unpacked_packet[1]
-    # seqno = unpacked_packet[2]
-    #dataLen = unpacked_packet[3]
-    # data = unpacked_packet[4]
-
     return unpacked_packet

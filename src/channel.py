@@ -61,16 +61,16 @@ def get_params():
         exit()
     else:    
         sys.argv = sys.argv[1:] #chops off the name of the program
-        CSIN = checkPort(sys.argv[0])
-        CSOUT = checkPort(sys.argv[1])
-        CRIN = checkPort(sys.argv[2])
-        CROUT = checkPort(sys.argv[3])
-        SIN = checkPort(sys.argv[4])
-        RIN = checkPort(sys.argv[5])
+        csin = checkPort(sys.argv[0])
+        csout = checkPort(sys.argv[1])
+        crin = checkPort(sys.argv[2])
+        crout = checkPort(sys.argv[3])
+        sin = checkPort(sys.argv[4])
+        rin = checkPort(sys.argv[5])
         P = checkProbability(sys.argv[6])
 
         
-    return  CSIN, CSOUT, CRIN, CROUT, SIN, RIN, P
+    return  csin, csout, crin, crout, sin, rin, P
     
 def can_send(P):
     """generates a uniformly distrubuted number between 0 and 1
@@ -88,9 +88,9 @@ def  return_resources(socket_list):
     for sockets in socket_list:
         sockets.close()
 
-def raise_socket_error(socket_list, ERROR_COUNT):
+def raise_socket_error(socket_list, error_count):
     """If connection resets """
-    if ERROR_COUNT >10:
+    if error_count >5:
         print()
         print("----------------------------------------")
         print("-----------Connection refused-----------")
@@ -105,12 +105,11 @@ def raise_socket_error(socket_list, ERROR_COUNT):
         print("---connection refused, trying again-----")
         print()
 
-    return ERROR_COUNT+1
+    return error_count + 1
 
-def raise_listen_error(socket_list, LISTENING_FLAG):
+def raise_listen_error(socket_list, listening_flag):
     """Raises error if has been listening too long"""
-    if LISTENING_FLAG > 20:
-
+    if listening_flag > 5:
         print()
         print("----------------------------------------")
         print("--------No responses in a while---------")
@@ -133,42 +132,42 @@ def main():
         randomly decides to drop packet or not
         if packet it isnt dropped it passes it through"""
 
-    CSIN, CSOUT, CRIN, CROUT, SIN, RIN, P = get_params()
+    csin, csout, crin, crout, sin, rin, P = get_params()
 
     sockCSOut = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    sockCSOut.bind(('127.0.0.1', CSOUT))
-    sockCSOut.connect(('127.0.0.1', SIN))  # So we don't have to specify where we send to
+    sockCSOut.bind(('127.0.0.1', csout))
+    sockCSOut.connect(('127.0.0.1', sin))  # So we don't have to specify where we send to
 
     sockCSIn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sockCSIn.bind(('127.0.0.1', CSIN))
+    sockCSIn.bind(('127.0.0.1', csin))
 
 
     sockCROut = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sockCROut.bind(('127.0.0.1', CROUT))
-    sockCROut.connect(('127.0.0.1', RIN))  # So we don't have to specify where we send to
+    sockCROut.bind(('127.0.0.1', crout))
+    sockCROut.connect(('127.0.0.1', rin))  # So we don't have to specify where we send to
 
     sockCRIn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sockCRIn.bind(('127.0.0.1', CRIN))
+    sockCRIn.bind(('127.0.0.1', crin))
 
     socket_list = [sockCROut, sockCRIn, sockCSIn, sockCSOut]
-    ERROR_COUNT = 0
-    LISTENING_FLAG = 0
+    error_count = 0
+    listening_flag = 0
 
     while True:
         readable, _, _ = select.select([sockCSIn, sockCRIn], [], [], 1)
 
         print("\nlistening\n")
         if len(readable) == 0:
-            LISTENING_FLAG += 1
-            if LISTENING_FLAG > 20:
-                raise_listen_error(socket_list, LISTENING_FLAG)
+            listening_flag += 1
+            if listening_flag > 20:
+                raise_listen_error(socket_list, listening_flag)
 
         else:
-            LISTENING_FLAG = 0 #reset listening time
+            listening_flag = 0 #reset listening time
             for sockets in readable:
 
-                if sockets is sockCSIn:
+                if sockets is sockCSIn: #if data is rome channel
                     data, addr = sockCSIn.recvfrom(528)
                     unpacked_packet = packets.unpack_packet(data)
                     magicno, type, seqno, dataLen, byte_data = unpacked_packet
@@ -176,16 +175,15 @@ def main():
                     if packets.magicNoCheck(magicno):
                         print("recieved Datapack...")
                         if can_send(P):
-                            print("sending Datapack")
+                            print("forwarding Datapack")
                             try:
                                 sockCROut.send(data)
                             except:
-                                ERROR_COUNT = raise_socket_error(socket_list, ERROR_COUNT)
-
+                                error_count = raise_socket_error(socket_list, error_count)
                         else:
                             print("PACKET FAILED TO SEND")
 
-                if sockets is sockCRIn:
+                if sockets is sockCRIn: #if data is from reciever
                     data, addr = sockCRIn.recvfrom(528)
                     unpacked_packet = packets.unpack_packet(data)
                     magicno, type, seqno, dataLen, byte_data = unpacked_packet
@@ -194,14 +192,15 @@ def main():
                         print("recieved ackPacket")
                         if can_send(P):
                             # now we can send the packet
-                            print("sending AckPack")
+                            print("Forwarding AckPack")
                             try:
                                 sockCSOut.send(data)
+                                print("Ackpack sent")
                             except:
-                                ERROR_COUNT = raise_socket_error(socket_list ,ERROR_COUNT)
+                                error_count = raise_socket_error(socket_list ,error_count)
 
                         else:
-                            print("PACKET FAILED TO SEND")
+                            print("ACKPACKET FAILED TO SEND")
 
 
 if __name__ == '__main__':

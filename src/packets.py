@@ -22,16 +22,14 @@ class packet:
         if self.type == PTYPE_ACK:
             current_type = "acknowledgementPacket"
         out_string = "\ntype is {0}\nSeqno is {1}\nDataLen is {2}\nData is {3}\nmagicNo is {4}\n".format(current_type, self.seqno, self.dataLen, self.data, self.isMagicno())
-        # a = ("Type is {0}\n".format(self.type))
-        # b = ("Seqno is {0}\n".format(self.seqno))
-        # c = ("DataLen is {0}\n".format(self.dataLen))
-        # d = ("Data is {0}\n".format(self.data))
-        # e = ("magicNo is {0}\n".format(self.magicno))
         return out_string
+
+    def set_ack(self):
+        self.type = PTYPE_ACK
 
 
 def magicNoCheck(magicno):
-    """Cechkes if magic numbe ris 0x497E"""
+    """Cechkes if magic numbe is 0x497E"""
     return magicno == int(MAGICNO, 0)
 
 def pack_packet(current_packet):
@@ -52,7 +50,6 @@ def pack_packet(current_packet):
 
 def unpack_packet(packed_packet):
     """Unpacks binary data from packet"""
-
     pack_format = 'I I I I {0}s'.format(len(packed_packet)-16)
     my_struct = struct.Struct(pack_format)
     unpacked_packet = my_struct.unpack(packed_packet)

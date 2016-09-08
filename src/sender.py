@@ -16,7 +16,9 @@ import packets
 import select
 
 MAX_BYTES = 512
-
+PTYPE_DATA = 0
+PTYPE_ACK = 1
+MAGICNO = hex(0x497E)
 
 def exit():
     """Exits the program displaying a message"""
@@ -84,7 +86,7 @@ def  return_resources(socket_list, file_object):
 def raise_socket_error(socket_list, file_object, ERROR_COUNT):
     """if connection to a socket is refused an error is raised
         will wait 10 times and then time out"""
-    if ERROR_COUNT >10:
+    if ERROR_COUNT >5:
 
         print()
         print("----------------------------------------")
@@ -108,6 +110,7 @@ def main():
 
 
     SIN, SOUT, CSIN, FILENAME = get_params()
+    #SIN, SOUT, CSIN, FILENAME = 7001, 7000, 8000, "input.txt"
 
     sockOut = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -131,10 +134,11 @@ def main():
     print()
     while not exitFlag:
         current_string = read_file_data(file_object)
+       # print(current_string)
         if len(current_string) == 0:
             current_packet = packets.packet(next, len(current_string), current_string)
             exitFlag = True
-            print("seding final packet")
+            #print("seding final packet")
 
         elif len(current_string) > 0:
             current_packet = packets.packet(next, len(current_string), current_string)
@@ -143,6 +147,7 @@ def main():
 
         has_response = False
         while not has_response:
+            #print("IM STUCK", exitFlag)
             try:
                 sockOut.send(encoded_packet) #sendencoded packet
                 all_packets_count += 1
@@ -153,29 +158,57 @@ def main():
             else:
                 ERROR_COUNT = 0 #a packet has been successfully sent so we can reset errorcount
 
-            print("------------Sending Packet--------------")
+            #print("------------Sending Packet--------------," data)
 
 
             readable, _, _ = select.select([sockIn], [], [], 1)
 
             if readable:
                 data = sockIn.recv(528)
-                has_response = True
-                print()
 
-                print("------------recieved ack Pack-----------")
+                unpacked_packet = packets.unpack_packet(data)
+                magicno, type, seqno, dataLen, byte_data = unpacked_packet
+
+
+                # if magicno == int(MAGICNO, 0) and type == PTYPE_DATA and seqno == expected:
+                if magicno == int(MAGICNO, 0) and type == PTYPE_ACK and dataLen == 0:
+                   # print(seqno, next)
+                    if seqno == next:
+                       # print("I GOT HERE")
+                          # Switches between 0 and 1 with XOR Using bitwise operator
+                        #exitFlag = True
+                        if exitFlag:
+                            has_response = True
+                            #pass
+
+                        next ^= 1
+
+
+
+
+
+
+
+                #print()
+
+                #print("------------recieved ack Pack-----------")
                 ack_packet_count +=1
+                has_response = True
 
-        next ^= 1 #Switches between 0 and 1 with XOR Using bitwise operator
 
 
-    print("Total num packets sent: ", all_packets_count)
-    print("Successful packets:     ", ack_packet_count  )
+
+    #print("Total num packets sent: ", all_packets_count)
+    #print("Successful packets:     ", ack_packet_count  )
     return_resources(socket_list, file_object)
-    exit()
+    return all_packets_count
+    #exit()
 
 if __name__ == '__main__':
     main()
+
+
+   # print(main())
 
 
 

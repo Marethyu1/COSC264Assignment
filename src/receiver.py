@@ -64,15 +64,16 @@ def get_params():
         exit()
     else:    
         sys.argv = sys.argv[1:]
-        RIN = checkPort(sys.argv[0])
+        rin = checkPort(sys.argv[0])
         ROUT = checkPort(sys.argv[1])
         CRIN = checkPort(sys.argv[2])
         FILENAME = checkFile(sys.argv[3])
+       #$ FILENAME = sys.argv[3]
         
         
         
         
-    return  RIN, ROUT, CRIN, FILENAME
+    return rin, ROUT, CRIN, FILENAME
 
 def  return_resources(socket_list):
     """closes sockets and file
@@ -107,14 +108,15 @@ def main():
     """Main function for reciever
      recieves data and turns into file
      sends ack packets"""
-    RIN, ROUT, CRIN, FILENAME = get_params()
+    #RIN, rout, CRIN, FILENAME = 9000, 9001, 8003, 'out.txt'
+    rin, rout, CRIN, FILENAME = get_params()
 
     sockOut = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sockOut.bind(('127.0.0.1', ROUT))
+    sockOut.bind(('127.0.0.1', rout))
     sockOut.connect(('127.0.0.1', CRIN))
 
     sockIn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sockIn.bind(('127.0.0.1', RIN))
+    sockIn.bind(('127.0.0.1', rin))
 
     expected = 0
     currentSeqno = 0
@@ -123,45 +125,94 @@ def main():
     socket_list = [sockOut, sockIn]
     ERROR_COUNT = 0
 
+    file_object = open(FILENAME, "wb+")
+
     while recieving_packets:
         readable, _, _ = select.select([sockIn], [], [], 1)
 
         if readable:
+            print("recieved Pack")
             data, sender = sockIn.recvfrom(528)
             unpacked_packet = packets.unpack_packet(data)
             magicno, type, seqno, dataLen, data = unpacked_packet
 
             if magicno == int(MAGICNO, 0) and type == PTYPE_DATA and seqno == expected:
 
-                ack_pack = packets.packet(currentSeqno)
+                ack_pack = packets.packet(seqno)
+                ack_pack.set_ack()
+
                 packed_packet = packets.pack_packet(ack_pack)
 
-                fileStream += data
-                print()
-                print("-" * 80)
-                print("recieved packet:",  data)
-                print("-" * 80)
-                print()
+                expected ^= 1
 
+
+
+                if dataLen > 0:
+                    #fileStream += data
+                    file_object.write(data)
+
+
+                    print()
+                    print("-" * 80)
+                    print("recieved packet:",  data, expected, seqno)
+                    print("-" * 80)
+                    print()
+
+                    try:
+                        sockOut.send(packed_packet)
+                    except:
+                        ERROR_COUNT = raise_socket_error(socket_list, ERROR_COUNT)
+
+                    else:
+                        ERROR_COUNT = 0 #a packet has been successfully sent so we can reset errorcount
+
+                else:   #datalen == 0
+                    ack_pack = packets.packet(seqno)
+                    ack_pack.set_ack()
+
+                    packed_packet = packets.pack_packet(ack_pack)
+                    try:
+                        sockOut.send(packed_packet)
+                    except:
+                        ERROR_COUNT = raise_socket_error(socket_list, ERROR_COUNT)
+
+                    else:
+                        ERROR_COUNT = 0  # a packet has been successfully sent so we can reset errorcount
+
+                    recieving_packets = False
+
+                    #expected ^= 1
+
+
+
+
+            elif(magicno == int(MAGICNO, 0) and type == PTYPE_DATA and seqno != expected):
+
+                ack_pack = packets.packet(seqno)
+                ack_pack.set_ack()
+
+                packed_packet = packets.pack_packet(ack_pack)
                 try:
                     sockOut.send(packed_packet)
                 except:
                     ERROR_COUNT = raise_socket_error(socket_list, ERROR_COUNT)
 
                 else:
-                    ERROR_COUNT = 0 #a packet has been successfully sent so we can reset errorcount
+                    ERROR_COUNT = 0  # a packet has been successfully sent so we can reset errorcount
 
-                if dataLen == 0:
-                    recieving_packets = False
 
-        expected ^= 1 #Switches between 0 and 1 with XOR Using bitwise operator
 
-    file_object = open(FILENAME, "wb+")
-    file_object.write(fileStream)
+
+         #Switches between 0 and 1 with XOR Using bitwise operator
+
+
+    #file_object.write(fileStream)
+    #file_object.write(data)
     file_object.close() #returns resources
 
+
     print("RECIEVED ALL DATA")
-    exit()
+    #exit()
 
 
 
@@ -170,6 +221,8 @@ def main():
 if __name__ == '__main__':
     #makes it run automatically which is neat
     main()
+
+#    main()
 
 
 

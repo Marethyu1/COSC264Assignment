@@ -62,12 +62,12 @@ def get_params():
         exit()
     else:    
         sys.argv = sys.argv[1:]
-        SIN = checkPort(sys.argv[0])
-        SOUT = checkPort(sys.argv[1])
-        CSIN = checkPort(sys.argv[2])
-        FILENAME = checkFile(sys.argv[3])
+        sin = checkPort(sys.argv[0])
+        sout = checkPort(sys.argv[1])
+        csin = checkPort(sys.argv[2])
+        filename = checkFile(sys.argv[3])
 
-    return  SIN, SOUT, CSIN, FILENAME
+    return  sin, sout, csin, filename
 
 
 def read_file_data(file_obj):
@@ -109,21 +109,20 @@ def main():
         sends a file to channel"""
 
 
-    SIN, SOUT, CSIN, FILENAME = get_params()
-    #SIN, SOUT, CSIN, FILENAME = 7001, 7000, 8000, "input.txt"
+    sin, sout, csin, filename = get_params()
 
     sockOut = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    sockOut.bind(('127.0.0.1', SOUT))
-    sockOut.connect(('127.0.0.1', CSIN))
+    sockOut.bind(('127.0.0.1', sout))
+    sockOut.connect(('127.0.0.1', csin))
 
     sockIn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sockIn.bind(('127.0.0.1', SIN))
+    sockIn.bind(('127.0.0.1', sin))
 
     next = 0
     exitFlag = False
 
-    file_object = open(FILENAME, "rb")
+    file_object = open(filename, "rb")
 
 
     all_packets_count  = 0
@@ -134,11 +133,9 @@ def main():
     print()
     while not exitFlag:
         current_string = read_file_data(file_object)
-       # print(current_string)
         if len(current_string) == 0:
             current_packet = packets.packet(next, len(current_string), current_string)
             exitFlag = True
-            #print("seding final packet")
 
         elif len(current_string) > 0:
             current_packet = packets.packet(next, len(current_string), current_string)
@@ -147,7 +144,6 @@ def main():
 
         has_response = False
         while not has_response:
-            #print("IM STUCK", exitFlag)
             try:
                 sockOut.send(encoded_packet) #sendencoded packet
                 all_packets_count += 1
@@ -158,9 +154,6 @@ def main():
             else:
                 ERROR_COUNT = 0 #a packet has been successfully sent so we can reset errorcount
 
-            #print("------------Sending Packet--------------," data)
-
-
             readable, _, _ = select.select([sockIn], [], [], 1)
 
             if readable:
@@ -170,45 +163,21 @@ def main():
                 magicno, type, seqno, dataLen, byte_data = unpacked_packet
 
 
-                # if magicno == int(MAGICNO, 0) and type == PTYPE_DATA and seqno == expected:
                 if magicno == int(MAGICNO, 0) and type == PTYPE_ACK and dataLen == 0:
-                   # print(seqno, next)
                     if seqno == next:
-                       # print("I GOT HERE")
-                          # Switches between 0 and 1 with XOR Using bitwise operator
-                        #exitFlag = True
                         if exitFlag:
                             has_response = True
-                            #pass
-
                         next ^= 1
 
-
-
-
-
-
-
-                #print()
-
-                #print("------------recieved ack Pack-----------")
                 ack_packet_count +=1
                 has_response = True
 
-
-
-
-    #print("Total num packets sent: ", all_packets_count)
-    #print("Successful packets:     ", ack_packet_count  )
+    print("Total num packets sent: ", all_packets_count)
     return_resources(socket_list, file_object)
-    return all_packets_count
-    #exit()
+    exit()
 
 if __name__ == '__main__':
     main()
-
-
-   # print(main())
 
 
 

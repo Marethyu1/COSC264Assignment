@@ -4,8 +4,9 @@ Channel part of assignment
 
 To run me type in the command line:
 python channel.py portNum PortNum PortNum PortNum S(in) R(in) P
-"""
 #   python3 channel.py 8000 8001 8003 8002 7001 9000 0.1
+"""
+
 import sys
 import socket
 import select

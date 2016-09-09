@@ -3,9 +3,10 @@ Receiver part of assignment
 #--Liz And Stefan--#
 To run me type in the command line:
 python3 receiver.py portNum PortNum PortNum fileName
+# python3 receiver.py 9000 9001 8003 test.txt
 """
 
-# python3 receiver.py 9000 9001 8003 test.txt
+
 
 import sys
 import socket
@@ -65,15 +66,14 @@ def get_params():
     else:    
         sys.argv = sys.argv[1:]
         rin = checkPort(sys.argv[0])
-        ROUT = checkPort(sys.argv[1])
-        CRIN = checkPort(sys.argv[2])
-        FILENAME = checkFile(sys.argv[3])
-       #$ FILENAME = sys.argv[3]
+        rout = checkPort(sys.argv[1])
+        crin = checkPort(sys.argv[2])
+        filename = checkFile(sys.argv[3])
+
         
         
         
-        
-    return rin, ROUT, CRIN, FILENAME
+    return rin, rout, crin, filename
 
 def  return_resources(socket_list):
     """closes sockets and file
@@ -108,7 +108,6 @@ def main():
     """Main function for reciever
      recieves data and turns into file
      sends ack packets"""
-    #RIN, rout, CRIN, FILENAME = 9000, 9001, 8003, 'out.txt'
     rin, rout, CRIN, FILENAME = get_params()
 
     sockOut = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -119,11 +118,9 @@ def main():
     sockIn.bind(('127.0.0.1', rin))
 
     expected = 0
-    currentSeqno = 0
     recieving_packets = True
-    fileStream = b''
     socket_list = [sockOut, sockIn]
-    ERROR_COUNT = 0
+    error_count = 0
 
     file_object = open(FILENAME, "wb+")
 
@@ -143,28 +140,18 @@ def main():
 
                 packed_packet = packets.pack_packet(ack_pack)
 
-                expected ^= 1
+                expected ^= 1   #Switches between 0 and 1 with XOR Using bitwise operator
 
-
-
-                if dataLen > 0:
-                    #fileStream += data
+                if dataLen > 0: #data in packet
                     file_object.write(data)
-
-
-                    print()
-                    print("-" * 80)
-                    print("recieved packet:",  data, expected, seqno)
-                    print("-" * 80)
-                    print()
 
                     try:
                         sockOut.send(packed_packet)
                     except:
-                        ERROR_COUNT = raise_socket_error(socket_list, ERROR_COUNT)
+                        error_count = raise_socket_error(socket_list, error_count)
 
                     else:
-                        ERROR_COUNT = 0 #a packet has been successfully sent so we can reset errorcount
+                        error_count = 0 #a packet has been successfully sent so we can reset errorcount
 
                 else:   #datalen == 0
                     ack_pack = packets.packet(seqno)
@@ -174,17 +161,12 @@ def main():
                     try:
                         sockOut.send(packed_packet)
                     except:
-                        ERROR_COUNT = raise_socket_error(socket_list, ERROR_COUNT)
+                        error_count = raise_socket_error(socket_list, error_count)
 
                     else:
-                        ERROR_COUNT = 0  # a packet has been successfully sent so we can reset errorcount
+                        error_count = 0  # a packet has been successfully sent so we can reset errorcount
 
                     recieving_packets = False
-
-                    #expected ^= 1
-
-
-
 
             elif(magicno == int(MAGICNO, 0) and type == PTYPE_DATA and seqno != expected):
 
@@ -195,34 +177,19 @@ def main():
                 try:
                     sockOut.send(packed_packet)
                 except:
-                    ERROR_COUNT = raise_socket_error(socket_list, ERROR_COUNT)
+                    error_count = raise_socket_error(socket_list, error_count)
 
                 else:
-                    ERROR_COUNT = 0  # a packet has been successfully sent so we can reset errorcount
+                    error_count = 0  # a packet has been successfully sent so we can reset errorcount
 
-
-
-
-         #Switches between 0 and 1 with XOR Using bitwise operator
-
-
-    #file_object.write(fileStream)
-    #file_object.write(data)
     file_object.close() #returns resources
-
-
     print("RECIEVED ALL DATA")
-    #exit()
-
-
-
-
+    exit()
 
 if __name__ == '__main__':
     #makes it run automatically which is neat
     main()
 
-#    main()
 
 
 

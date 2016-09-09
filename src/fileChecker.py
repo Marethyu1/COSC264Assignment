@@ -1,9 +1,8 @@
 import sys
 import filecmp
 
-
-
 def main():
+    """Checks if two files are equal"""
 
     if len(sys.argv)==3:
         file_a = sys.argv[1]
@@ -14,11 +13,8 @@ def main():
         else:
             print("Files are not equal :( ")
 
-
-
-
-
-
-
 if __name__ == '__main__':
     main()
+
+
+

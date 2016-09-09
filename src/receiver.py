@@ -14,7 +14,6 @@ import os.path
 import packets
 import select
 
-
 MAX_BYTES = 512
 MAGICNO = hex(0x497E)
 PTYPE_DATA = 0
